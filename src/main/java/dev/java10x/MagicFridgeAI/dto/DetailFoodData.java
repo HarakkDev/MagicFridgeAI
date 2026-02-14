@@ -6,6 +6,7 @@ import dev.java10x.MagicFridgeAI.model.Food;
 import java.time.LocalDateTime;
 
 public record DetailFoodData(
+        Long id,
         String nome,
         int quantidade,
         Categoria categoria,
@@ -15,6 +16,7 @@ public record DetailFoodData(
           Food food
     ) {
         this(
+                food.getId(),
                 food.getNome(),
                 food.getQuantidade(),
                 food.getCategoria(),

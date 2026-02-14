@@ -42,7 +42,7 @@ public class ChatGptService {
                 - Não coloque FRUTAS ou ingredientes de sobremesa junto do prato principal!
                 - Formato:
                   1) Nome da receita
-                  2) Ingredientes
+                  2) Ingredientes - Não é necessário usar TODO o estoque, use somente o necessário para UMA pessoa.
                   3) Modo de preparo (passo a passo)
                   4) Tempo estimado
                   5) Dicas
@@ -56,6 +56,7 @@ public class ChatGptService {
                                 "role", "system",
                                 "content",
                                 "Você é um chefe de cozinha. Você só responde com receitas baseadas nos ingredientes. " +
+                                    "Não é necessário utilizar TODOS ingredientes e nem TODA a quantidade, todos pedidos serão feito para somente UMA pessoa se alimentar" +
                                     "Se receber uma requisição fora desse contexto, diga que é feito SOMENTE para escrever receitas."
                         ),
                         Map.of("role", "user", "content", prompt)
@@ -111,7 +112,7 @@ public class ChatGptService {
                             A receita será essa: %s
                             E a imagem deve SEGUIR EXATAMENTE o que está escrito no tópico a seguir:
                             6) Descrição visual do prato para gerar uma imagem para o usuário (Será um prompt para outra IA).
-                            A imagem deve tentar representar uma foto tirada de um celular (Realista mas sem exagerar)
+                            A imagem deve ser o prato finalizado (Realista mas sem exagerar)
                             Extremamente proibido: NÃO COLOCAR INGREDIENTES DE SOBREMESA NO PRATO PRINCIPAL!!!
                             Extremamente proibido: NÃO MISTURAR INGREDIENTES DO PRATO PRINCIPAL E SOBREMESA NO MESMO RECIPIENTE!
                             """.formatted(receita);

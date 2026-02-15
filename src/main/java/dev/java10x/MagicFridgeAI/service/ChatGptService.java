@@ -39,23 +39,22 @@ public class ChatGptService {
 
                 Regras:
                 - Use APENAS os ingredientes enviados, e temperos básicos (sal, pimenta, água, óleo) se precisar.
-                - Não coloque FRUTAS ou ingredientes de sobremesa junto do prato principal!
                 - Formato:
                   1) Nome da receita
                   2) Ingredientes - Não é necessário usar TODO o estoque, use somente o necessário para UMA pessoa.
                   3) Modo de preparo (passo a passo)
                   4) Tempo estimado
                   5) Dicas
-                  6) Descrição visual do prato para gerar uma imagem para o usuário (Será um prompt para outra IA).
+                  6) Descrição visual do prato para gerar uma imagem para o usuário (Será um prompt para outra IA, fale coisas SIMPLES não quero exagero).
                 """.formatted(itens);
 
         Map<String, Object> requestBody = Map.of(
-                "model", "gpt-4o",
+                "model", "gpt-5-mini",
                 "messages", List.of(
                         Map.of(
                                 "role", "system",
                                 "content",
-                                "Você é um chefe de cozinha. Você só responde com receitas baseadas nos ingredientes. " +
+                                "Você é um chefe de cozinha. Você só responde com receitas baseadas nos ingredientes e sem exagerar nas criações " +
                                     "Não é necessário utilizar TODOS ingredientes e nem TODA a quantidade, todos pedidos serão feito para somente UMA pessoa se alimentar" +
                                     "Se receber uma requisição fora desse contexto, diga que é feito SOMENTE para escrever receitas."
                         ),
@@ -82,9 +81,9 @@ public class ChatGptService {
 
     private Mono<String> generateRecipeImageFromPrompt(String promptImagem) {
         Map<String, Object> requestBody = Map.of(
-                "model", "dall-e-3",
+                "model", "gpt-image-1.5",
                 "prompt", promptImagem,
-                "size", "1024x1024",
+                "size", "1536x1024",
                 "n", 1
         );
 
@@ -98,8 +97,15 @@ public class ChatGptService {
                 .map(response -> {
                     var data = (List<Map<String, Object>>) response.get("data");
                     if (data != null && !data.isEmpty()) {
-                        Object url = data.get(0).get("url");
-                        return url != null ? url.toString() : "";
+                        Map<String, Object> imageData = data.get(0);
+                        Object url = imageData.get("url");
+                        if (url != null && !url.toString().isBlank()) {
+                            return url.toString();
+                        }
+                        Object base64 = imageData.get("b64_json");
+                        if (base64 != null && !base64.toString().isBlank()) {
+                            return "data:image/png;base64," + base64;
+                        }
                     }
                     return "";
                 });
@@ -112,7 +118,7 @@ public class ChatGptService {
                             A receita será essa: %s
                             E a imagem deve SEGUIR EXATAMENTE o que está escrito no tópico a seguir:
                             6) Descrição visual do prato para gerar uma imagem para o usuário (Será um prompt para outra IA).
-                            A imagem deve ser o prato finalizado (Realista mas sem exagerar)
+                            A imagem deve ser o prato finalizado, não exagere na imagem, faça algo comum.
                             Extremamente proibido: NÃO COLOCAR INGREDIENTES DE SOBREMESA NO PRATO PRINCIPAL!!!
                             Extremamente proibido: NÃO MISTURAR INGREDIENTES DO PRATO PRINCIPAL E SOBREMESA NO MESMO RECIPIENTE!
                             """.formatted(receita);

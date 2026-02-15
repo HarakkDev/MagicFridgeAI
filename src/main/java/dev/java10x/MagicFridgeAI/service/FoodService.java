@@ -23,6 +23,8 @@ public class FoodService {
             Integer qtdAtual = existente.getQuantidade() != null ? existente.getQuantidade() : 0;
             Integer qtdNova  = food.getQuantidade() != null ? food.getQuantidade() : 0;
             existente.setQuantidade(qtdAtual + qtdNova);
+            existente.setValidade(food.getValidade());
+            existente.setCategoria(food.getCategoria());
             foodRepository.save(existente);
             return ResponseEntity.status(HttpStatus.OK).body("Quantidade do ingrediente atualizada com sucesso!");
         }
@@ -59,5 +61,10 @@ public class FoodService {
         food.setId(food.getId());
         foodRepository.save(food);
         return ResponseEntity.status(HttpStatus.OK).body("Ingrediente " + food.getNome() + "atualizado com sucesso!");
+    }
+
+    public ResponseEntity<String> deletarTodos() {
+        foodRepository.deleteAll();
+        return ResponseEntity.ok("Todos os ingredientes foram removidos com sucesso!");
     }
 }

@@ -1,7 +1,7 @@
 package dev.java10x.MagicFridgeAI.service;
 
 import dev.java10x.MagicFridgeAI.dto.DetailFoodData;
-import dev.java10x.MagicFridgeAI.dto.RecipeWithImageData;
+import dev.java10x.MagicFridgeAI.dto.ReceitaImagemDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -21,24 +21,23 @@ public class ChatGptService {
 
     private final String apiKey = System.getenv("CHATGPT_API_KEY");
 
-    private String ingredientesToText(List<DetailFoodData> ingredientes) {
-        return ingredientes.stream()
-                .map(i -> {
-                    String nome = i.nome();
-                    int qtd = i.quantidade();
-                    return qtd > 0 ? nome + " (" + qtd + ")" : nome;
-                })
-                .collect(Collectors.joining(", "));
+    public Mono<ReceitaImagemDTO> gerarReceitaEImagem(List<DetailFoodData> ingredientes) {
+        return gerarReceita(ingredientes)
+                .flatMap(receita -> {
+                    String promptImagem = extrairDescricaoVisual(receita) + " Não exagere na imagem, faça algo comum.";
+
+                    return gerarImagem(promptImagem)
+                            .map(url -> new ReceitaImagemDTO(receita, url));
+                });
     }
 
-    public Mono<String> generateRecipeText(List<DetailFoodData> ingredientes) {
-        String itens = ingredientesToText(ingredientes);
-
+    public Mono<String> gerarReceita(List<DetailFoodData> ingredientes) {
+        String itens = listaDeIngredientes(ingredientes);
         String prompt = """
                 Faça uma receita usando estes ingredientes: %s
 
                 Regras:
-                - Use APENAS os ingredientes enviados, e temperos básicos (sal, pimenta, água, óleo) se precisar.
+                - Use APENAS os ingredientes enviados e temperos básicos (sal, pimenta, água, óleo) se precisar.
                 - Formato:
                   1) Nome da receita
                   2) Ingredientes - Não é necessário usar TODO o estoque, use somente o necessário para UMA pessoa.
@@ -49,14 +48,14 @@ public class ChatGptService {
                 """.formatted(itens);
 
         Map<String, Object> requestBody = Map.of(
-                "model", "gpt-5-mini",
+                "model", "gpt-4o",
                 "messages", List.of(
                         Map.of(
                                 "role", "system",
                                 "content",
                                 "Você é um chefe de cozinha. Você só responde com receitas baseadas nos ingredientes e sem exagerar nas criações " +
                                     "Não é necessário utilizar TODOS ingredientes e nem TODA a quantidade, todos pedidos serão feito para somente UMA pessoa se alimentar" +
-                                    "Se receber uma requisição fora desse contexto, diga que é feito SOMENTE para escrever receitas."
+                                    "Se receber uma requisição fora desse contexto, diga que sua UNICA funcionalidade é escrever receitas."
                         ),
                         Map.of("role", "user", "content", prompt)
                 )
@@ -79,7 +78,7 @@ public class ChatGptService {
                 });
     }
 
-    private Mono<String> generateRecipeImageFromPrompt(String promptImagem) {
+    private Mono<String> gerarImagem(String promptImagem) {
         Map<String, Object> requestBody = Map.of(
                 "model", "gpt-image-1.5",
                 "prompt", promptImagem,
@@ -111,24 +110,25 @@ public class ChatGptService {
                 });
     }
 
-    public Mono<RecipeWithImageData> generateReceitaImagem(List<DetailFoodData> ingredientes) {
-        return generateRecipeText(ingredientes)
-                .flatMap(receita -> {
-                    String promptImagem = """
-                            A receita será essa: %s
-                            E a imagem deve SEGUIR EXATAMENTE o que está escrito no tópico a seguir:
-                            6) Descrição visual do prato para gerar uma imagem para o usuário (Será um prompt para outra IA).
-                            A imagem deve ser o prato finalizado, não exagere na imagem, faça algo comum.
-                            Extremamente proibido: NÃO COLOCAR INGREDIENTES DE SOBREMESA NO PRATO PRINCIPAL!!!
-                            Extremamente proibido: NÃO MISTURAR INGREDIENTES DO PRATO PRINCIPAL E SOBREMESA NO MESMO RECIPIENTE!
-                            """.formatted(receita);
-
-                    return generateRecipeImageFromPrompt(promptImagem)
-                            .map(url -> new RecipeWithImageData(receita, url));
-                });
+    private String listaDeIngredientes(List<DetailFoodData> ingredientes) {
+        return ingredientes.stream()
+                .map(i -> {
+                    String nome = i.nome();
+                    int qtd = i.quantidade();
+                    return "Ingrediente: " + nome + ". Quantidade: " + qtd;
+                })
+                .collect(Collectors.joining(", "));
     }
 
-    public String buildHtml(RecipeWithImageData data) {
+    private String extrairDescricaoVisual(String receita) {
+        int promptParaImagem = receita.indexOf("6)");
+        if (promptParaImagem < 0) {
+            return receita;
+        }
+        return receita.substring(promptParaImagem + 2).trim();
+    }
+
+    public String buildHtml(ReceitaImagemDTO data) {
         String receitaHtml = data.receita()
                 .replace("&", "&amp;")
                 .replace("<", "&lt;")

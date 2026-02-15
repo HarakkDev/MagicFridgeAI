@@ -26,7 +26,7 @@ public class RecipeController {
         if (ingredientes == null || ingredientes.isEmpty()) {
             return Mono.just("<html><body><h2>Sem ingredientes cadastrados.</h2></body></html>");
         }
-        return chatGptService.generateReceitaImagem(ingredientes)
+        return chatGptService.gerarReceitaEImagem(ingredientes)
                 .map(data -> chatGptService.buildHtml(data));
     }
 }

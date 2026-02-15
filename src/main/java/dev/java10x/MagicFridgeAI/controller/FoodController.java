@@ -36,6 +36,11 @@ public class FoodController {
         return foodService.deletar(id);
     }
 
+    @DeleteMapping("/deletarTodos")
+    public ResponseEntity<String> deletarTodos() {
+        return foodService.deletarTodos();
+    }
+
     @PatchMapping("/atualizar/{id}")
     public ResponseEntity<String> atualizar(@PathVariable Long id, @RequestBody Food food) {
         return foodService.atualizar(id, food);

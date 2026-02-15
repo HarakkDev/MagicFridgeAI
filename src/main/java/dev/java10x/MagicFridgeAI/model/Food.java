@@ -7,7 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Entity
 @Getter
@@ -28,5 +28,5 @@ public class Food {
 
     private Integer quantidade;
 
-    private LocalDateTime validade;
+    private LocalDate validade;
 }

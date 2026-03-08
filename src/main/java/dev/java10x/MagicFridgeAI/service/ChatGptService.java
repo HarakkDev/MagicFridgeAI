@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -20,6 +21,26 @@ public class ChatGptService {
     private WebClient webClient;
 
     private final String apiKey = System.getenv("CHATGPT_API_KEY");
+
+    public Mono<String> gerarReceitaImagemHtml(List<DetailFoodData> ingredientes) {
+        if (ingredientes == null || ingredientes.isEmpty()) {
+            return Mono.just("<html><body><h2>Sem ingredientes cadastrados.</h2></body></html>");
+        }
+
+        List<DetailFoodData> ingredientesValidos = filtrarIngredientesValidos(ingredientes);
+        if (ingredientesValidos.isEmpty()) {
+            return Mono.just("<html><body><h2>Sem ingredientes válidos. Todos os itens estão vencidos.</h2></body></html>");
+        }
+
+        return gerarReceitaEImagem(ingredientesValidos)
+                .map(this::buildHtml);
+    }
+
+    private List<DetailFoodData> filtrarIngredientesValidos(List<DetailFoodData> ingredientes) {
+        return ingredientes.stream()
+                .filter(ingrediente -> ingrediente.validade() == null || !ingrediente.validade().isBefore(LocalDate.now()))
+                .toList();
+    }
 
     public Mono<ReceitaImagemDTO> gerarReceitaEImagem(List<DetailFoodData> ingredientes) {
         return gerarReceita(ingredientes)
@@ -53,8 +74,8 @@ public class ChatGptService {
                         Map.of(
                                 "role", "system",
                                 "content",
-                                "Você é um chefe de cozinha. Você só responde com receitas baseadas nos ingredientes e sem exagerar nas criações " +
-                                    "Não é necessário utilizar TODOS ingredientes e nem TODA a quantidade, todos pedidos serão feito para somente UMA pessoa se alimentar" +
+                                "Você é um chefe de cozinha. Você só responde com receitas baseadas nos ingredientes e sem exagerar nas criações. " +
+                                    "Não é necessário utilizar TODOS ingredientes e nem TODA a quantidade, todos pedidos serão feito para somente UMA pessoa se alimentar." +
                                     "Se receber uma requisição fora desse contexto, diga que sua UNICA funcionalidade é escrever receitas."
                         ),
                         Map.of("role", "user", "content", prompt)

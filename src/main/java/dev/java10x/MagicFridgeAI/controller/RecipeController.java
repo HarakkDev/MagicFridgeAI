@@ -23,10 +23,6 @@ public class RecipeController {
     @GetMapping(value="/gerarReceitaImagem", produces = MediaType.TEXT_HTML_VALUE)
     public Mono<String> gerarReceitaImagem() {
         List<DetailFoodData> ingredientes = foodService.listar().getBody();
-        if (ingredientes == null || ingredientes.isEmpty()) {
-            return Mono.just("<html><body><h2>Sem ingredientes cadastrados.</h2></body></html>");
-        }
-        return chatGptService.gerarReceitaEImagem(ingredientes)
-                .map(data -> chatGptService.buildHtml(data));
+        return chatGptService.gerarReceitaImagemHtml(ingredientes);
     }
 }
